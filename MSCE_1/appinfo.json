@@ -1,0 +1,17 @@
+{
+  "uuid": "98b5098e-95b6-415a-bd28-88b190b59d35",
+  "shortName": "MSCE_1",
+  "longName": "MSCE_1",
+  "companyName": "MakeAwesomeHappen",
+  "versionCode": 1,
+  "versionLabel": "1.0.0",
+  "watchapp": {
+    "watchface": false
+  },
+  "appKeys": {
+    "dummy": 0
+  },
+  "resources": {
+    "media": []
+  }
+}
