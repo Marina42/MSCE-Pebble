@@ -32,7 +32,6 @@ void render (void* callback_data){
 static void my_layer_draw(Layer *layer, GContext *ctx) {
 
   Ball *ball = front_ball;
-  int i = 0;
 
   while (ball) {
 
@@ -73,7 +72,7 @@ static void init(void) {
   });
   const bool animated = true;
   window_stack_push(window, animated);
-  
+
 }
 
 static void deinit(void) {
@@ -119,4 +118,5 @@ int main(void) {
   app_timer_register(INTERVAL, render, NULL);
   app_event_loop();
   deinit();
+
 }
