@@ -7,62 +7,101 @@
 #define SCREEN_HEIGHT 151
 #define FPS 60
 #define INTERVAL (1000/FPS)
+#define INITIAL_SIZE 16
 
 static Window *window;
 struct Layer *window_layer;
 
 typedef struct Ball Ball;
 
-struct Ball {
+struct Ball 
+{
   GPoint pos;
   GPoint speed;
   int radius;
-  Ball* next;
-  Ball* prev;
 };
 
-Ball* front_ball;
-Ball* back_ball;
+typedef struct 
+{
+  Ball *array;
+  size_t used;
+  size_t size;
+}Ball_array;
 
-void render (void* callback_data){
+Ball_array array;
+
+void initArray (size_t init_size)
+{
+  array.array = (Ball *)malloc(init_size * sizeof(Ball));
+  array.used = 0;
+  array.size = init_size;
+}
+
+void render (void* callback_data)
+{
   layer_mark_dirty(window_layer);
   app_timer_register (INTERVAL, render, NULL);
 }
 
-static void my_layer_draw(Layer *layer, GContext *ctx) {
+static void select_click_handler(ClickRecognizerRef recognizer, void *context) 
+{
+  Ball ball;
 
-  Ball *ball = front_ball;
+  ball.pos.x = rand()%5 - 2;
+  ball.pos.y = rand()%5 -2;
 
-  while (ball) {
+  ball.radius = rand()%10+1;
 
+  ball.pos.x = rand()%(SCREEN_WIDTH-2*ball.radius)+ball.radius;
+  ball.pos.y = rand()%(SCREEN_HEIGHT-2*ball.radius)+ball.radius;
+  
+  if (array.used == array.size) 
+  {
+    array.size *= 2;
+    array.array = (Ball *)realloc(array.array, array.size * sizeof(Ball));
+  }
+  array.array[array.used++] = ball;
+}
+
+static void down_click_handler(ClickRecognizerRef recognizer, void *context)
+{
+  --array.used;
+}
+
+static void click_config_provider(void *context) 
+{
+  window_single_click_subscribe(BUTTON_ID_SELECT, select_click_handler);
+  window_single_click_subscribe(BUTTON_ID_DOWN, down_click_handler);
+}
+
+static void my_layer_draw(Layer *layer, GContext *ctx) 
+{
+  int n = array.used;
+  int i;
+  for (i = 0; i < n; ++i)
+  {
     graphics_context_set_fill_color(ctx, GColorWhite);
-    graphics_fill_circle(ctx, ball->pos, ball->radius);
+    graphics_fill_circle(ctx, array.array[i].pos, array.array[i].radius);
 
-    if (ball->pos.x >= SCREEN_WIDTH-ball->radius || ball->pos.x <= ball->radius) ball->speed.x *= -1;
-    if (ball->pos.y >= SCREEN_HEIGHT-ball->radius || ball->pos.y <= ball->radius) ball->speed.y *= -1;
+    if (array.array[i].pos.x >= SCREEN_WIDTH - array.array[i].radius || array.array[i].pos.x <= array.array[i].radius) 
+        array.array[i].speed.x *= -1;
+    if (array.array[i].pos.y >= SCREEN_HEIGHT - array.array[i].radius || array.array[i].pos.y <= array.array[i].radius) 
+        array.array[i].speed.y *= -1;
 
-    ball->pos.x += ball->speed.x;
-    ball->pos.y += ball->speed.y;
+    array.array[i].pos.x += array.array[i].speed.x;
+    array.array[i].pos.y += array.array[i].speed.y;
 
     graphics_context_set_fill_color(ctx, GColorBlack);
-    graphics_fill_circle(ctx, ball->pos, ball->radius);
-
-    ball = ball->next;
-
+    graphics_fill_circle(ctx, array.array[i].pos, array.array[i].radius);
   }
-
 }
 
-static void window_load(Window *window) {
-  window_layer = window_get_root_layer(window);
-}
+static void window_load(Window *window) {}
 
-static void window_unload(Window *window) {
+static void window_unload(Window *window) {}
   
-}
-
-static void init(void) {
-
+static void init(void) 
+{
   window = window_create();
   window_layer = window_get_root_layer (window);
   layer_set_update_proc(window_layer, my_layer_draw);
@@ -72,7 +111,7 @@ static void init(void) {
   });
   const bool animated = true;
   window_stack_push(window, animated);
-
+  initArray(INITIAL_SIZE);
 }
 
 static void deinit(void) {
@@ -80,37 +119,6 @@ static void deinit(void) {
 }
 
 int main(void) {
-
-  srand(time(NULL));
-
-  int i = 0;
-
-  for (i = 0; i < 100; ++i) {
-
-    Ball *b = (Ball *) malloc(sizeof(Ball));
-
-    b->speed.x = rand()%5 - 2;
-    b->speed.y = rand()%5 - 2;
-
-    b->radius = rand()%10+1;
-
-    b->pos.x = rand()%(SCREEN_WIDTH-2*b->radius)+b->radius;
-    b->pos.y = rand()%(SCREEN_HEIGHT-2*b->radius)+b->radius;
-
-    b->next = NULL;
-    b->prev = NULL;
-
-    if (front_ball == NULL) {
-      front_ball = b;
-      back_ball = b;
-    } else {
-      back_ball->next = b;
-      b->prev = back_ball;
-      back_ball = b;
-    }
-
-  }
-
   init();
   
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Done initializing, pushed window: %p", window);
